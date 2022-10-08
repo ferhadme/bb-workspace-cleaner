@@ -12,9 +12,10 @@ $ go build
 ```sh
 $ ./bb-workspace-cleaner <user> <organization>
 ```
-<user> is username of BitBucket user
-<organization> is name of the organization owns repositories
+*user* is username of BitBucket user
+
+*organization* is name of the organization owns repositories
 
 ### Pass.txt file
 Program uses [App passwords](https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/) for authenticating BitBucket endpoints.
-Generated App password should be written to **pass.txt**
+Generated App password should be written to **pass.txt** file
