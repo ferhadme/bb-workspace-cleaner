@@ -1,4 +1,13 @@
+/**
+Usage:
+  ./bb-workspace-cleaner user organization
+Where,
+  user = Username of BitBucket account
+  organization = Name of organization user wants to interact
+*/
+
 package main
+
 
 import (
 	"fmt"
@@ -8,14 +17,17 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"time"
+	"log"
 )
+
 
 const (
 	PASSFILE = "pass.txt"
 	BASE_BITBUCKET_API = "https://api.bitbucket.org/2.0"
-	BITBUCKET_REPOSITORIES_API = "/repositories/bettechbackend"
+	BITBUCKET_REPOSITORIES_API = "/repositories/%s"
 	BITBUCKET_REPOSITORY_BRANCH_API = "/%s/refs/branches"
 )
+
 
 type RepositoryResponse struct {
 	Size int `json:"size"`
@@ -34,46 +46,85 @@ type BranchResponse struct {
 	} `json:"values"`
 }
 
+
 func main() {
+	args := os.Args[1:]
+	if len(args) < 2 {
+		fmt.Println("Not enough arguments")
+		os.Exit(1)
+	}
+
+	user := args[0]
+	organization := args[1]
+
 	pass := initPass()
-	repoNames := getRepositories(pass)
+	repoNames := getRepositories(user, pass, organization)
 	for _, repo := range repoNames {
-		branchResponse := getBranchesOfRepository(pass, repo)
-		deleteBranchesUpdatedXMonthsAgo(pass, 3, repo, branchResponse)
-		break
+		log.Println("Fetching all branches of ", repo)
+		branchResponse := getBranchesOfRepository(user, pass, organization, repo)
+		log.Println(branchResponse.Size)
+		// deleteBranchesUpdatedXMonthsAgo(user, pass, organization, repo, branchResponse)
+		log.Println("******")
 	}
 }
 
-func deleteBranchesUpdatedXMonthsAgo(pass string, x uint8, repo string, branchResponse BranchResponse) {
+func deleteBranchesUpdatedThreeMonthsAgo(user, pass, organization, repo string, branchResponse BranchResponse) {
 	for _, branch := range branchResponse.Values {
 		dateStr := branch.Target.Date
-		lastUpdateTime, err := time.Parse(time.RFC3339, dateStr)
+		lastUpdateTime, _ := time.Parse(time.RFC3339, dateStr)
 
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
 		now := time.Now()
-		fmt.Println(lastUpdateTime)
-		fmt.Println(now)
 		hoursDiff := now.Sub(lastUpdateTime).Hours()
-		fmt.Println(hoursDiff)
 		if hoursDiff >= 2190 {
-			fmt.Println("Branch is old")
-			// TODO: Delete this branch
+			if branch.Name != "master" || branch.Name != "staging" {
+				log.Println("Branch is old ", branch, " and should be deleted")
+				deleteBranch(user, pass, organization, repo, branch.Name)
+			}
 		}
 	}
 }
 
-func getBranchesOfRepository(pass string, repo string) BranchResponse {
+func deleteBranch(user, pass, organization, repo, branch string) {
+	client := &http.Client{}
+
+	req, _ := http.NewRequest("DELETE",
+		BASE_BITBUCKET_API +
+			fmt.Sprintf(BITBUCKET_REPOSITORIES_API, organization) +
+			fmt.Sprintf(BITBUCKET_REPOSITORY_BRANCH_API, repo) + "/" + branch,
+		nil)
+
+	req.Header.Add("Accept", "application/json")
+	req.SetBasicAuth(user, pass)
+	q := req.URL.Query()
+	q.Add("role", "contributor")
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Error happened while making request")
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 204 {
+		log.Println("Branch ", branch, " is successfully deleted")
+	} else {
+		log.Fatal("Branch deletion failed for branch ", branch)
+	}
+	log.Println("******")
+}
+
+func getBranchesOfRepository(user, pass, organization, repo string) BranchResponse {
 	client := &http.Client{}
 
 	req, _ := http.NewRequest("GET",
-		BASE_BITBUCKET_API + BITBUCKET_REPOSITORIES_API +
-			fmt.Sprintf(BITBUCKET_REPOSITORY_BRANCH_API, repo), nil)
+		BASE_BITBUCKET_API +
+			fmt.Sprintf(BITBUCKET_REPOSITORIES_API, organization) +
+			fmt.Sprintf(BITBUCKET_REPOSITORY_BRANCH_API, repo),
+		nil)
 
 	req.Header.Add("Accept", "application/json")
-	req.SetBasicAuth("ferhadme", pass)
+	req.SetBasicAuth(user, pass)
 	q := req.URL.Query()
 	q.Add("role", "contributor")
 	q.Add("pagelen", "100")
@@ -81,8 +132,8 @@ func getBranchesOfRepository(pass string, repo string) BranchResponse {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error happened")
-		return BranchResponse{}
+		log.Fatal("Error happened while making request")
+		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
@@ -90,20 +141,23 @@ func getBranchesOfRepository(pass string, repo string) BranchResponse {
 
 	var result BranchResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
-		fmt.Println("Can not unmarshall JSON")
-		return BranchResponse{}
+		log.Fatal("Can not unmarshall JSON")
+		os.Exit(1)
 	}
 
+	log.Println("All branches of ", repo, " have been fetched")
 	return result
 }
 
-func getRepositories(pass string) []string {
+func getRepositories(user, pass, organization string) []string {
 	client := &http.Client{}
 
 	req, _ := http.NewRequest("GET",
-		BASE_BITBUCKET_API + BITBUCKET_REPOSITORIES_API, nil)
+		BASE_BITBUCKET_API +
+			fmt.Sprintf(BITBUCKET_REPOSITORIES_API, organization),
+		nil)
 	req.Header.Add("Accept", "application/json")
-	req.SetBasicAuth("ferhadme", pass)
+	req.SetBasicAuth(user, pass)
 
 	q := req.URL.Query()
 	q.Add("role", "contributor")
@@ -112,8 +166,8 @@ func getRepositories(pass string) []string {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error happened")
-		return []string {}
+		log.Fatal("Error happened while making request")
+		os.Exit(1)
 	}
 	defer resp.Body.Close()
 
@@ -121,14 +175,15 @@ func getRepositories(pass string) []string {
 
 	var result RepositoryResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
-		fmt.Println("Can not unmarshall JSON")
-		return []string {}
+		log.Fatal("Can not unmarshall JSON")
+		os.Exit(1)
 	}
 
 	repoNames := make([]string, result.Size)
 	for idx, repo := range result.Values {
 		repoNames[idx] = repo.Name
 	}
+	log.Println("All repositories of organization x that user has access fetched")
 	return repoNames
 }
 
@@ -141,5 +196,7 @@ func initPass() string {
 	fileScanner := bufio.NewScanner(passFile)
 	fileScanner.Split(bufio.ScanLines)
 	fileScanner.Scan()
-	return fileScanner.Text()
+	pass := fileScanner.Text()
+	log.Println("Pass is initialized")
+	return pass
 }
