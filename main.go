@@ -1,13 +1,16 @@
 /**
+Copyright 2022 Ferhad Mehdizade
+
 Usage:
   ./bb-workspace-cleaner user organization
 Where,
   user = Username of BitBucket account
   organization = Name of organization user wants to interact
+
+App password (https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/) should be written to pass.txt file for authentication
 */
 
 package main
-
 
 import (
 	"fmt"
@@ -20,14 +23,12 @@ import (
 	"log"
 )
 
-
 const (
 	PASSFILE = "pass.txt"
 	BASE_BITBUCKET_API = "https://api.bitbucket.org/2.0"
 	BITBUCKET_REPOSITORIES_API = "/repositories/%s"
 	BITBUCKET_REPOSITORY_BRANCH_API = "/%s/refs/branches"
 )
-
 
 type RepositoryResponse struct {
 	Size int `json:"size"`
@@ -45,7 +46,6 @@ type BranchResponse struct {
 		} `json:"target"`
 	} `json:"values"`
 }
-
 
 func main() {
 	args := os.Args[1:]
