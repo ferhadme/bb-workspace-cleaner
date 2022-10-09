@@ -66,18 +66,15 @@ func init() {
 func main() {
 	flag.Parse()
 
-	branchResponse := getBranchesOfRepository("account-service")
-	deleteBranchesUpdatedXMonthsAgo("account-service", branchResponse)
+	repoNames := getRepositories()
 
-	// repoNames := getRepositories()
-
-	// for _, repo := range repoNames {
-	// 	log.Println("Fetching all branches of ", repo)
-	// 	branchResponse := getBranchesOfRepository(repo)
-	// 	log.Println(branchResponse.Size)
-	// 	deleteBranchesUpdatedXMonthsAgo(repo, branchResponse)
-	// 	log.Println("******")
-	// }
+	for _, repo := range repoNames {
+		log.Println("Fetching all branches of ", repo)
+		branchResponse := getBranchesOfRepository(repo)
+		log.Println(branchResponse.Size)
+		deleteBranchesUpdatedXMonthsAgo(repo, branchResponse)
+		log.Println("******")
+	}
 }
 
 func deleteBranchesUpdatedXMonthsAgo(repo string, branchResponse BranchResponse) {
