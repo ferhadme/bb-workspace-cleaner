@@ -1,7 +1,7 @@
 # Bitbucket Workspace Cleaner
 
 ### Description
-Command line tool for removing all branches of repositories of organization that last updated 3 months ago
+Command line tool for removing all branches of repositories of organization that last updated x months ago
 
 ### Compilation
 ```sh
