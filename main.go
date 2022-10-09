@@ -1,15 +1,15 @@
-/**
+/*
 Copyright 2022 Ferhad Mehdizade
 
 Usage:
   ./bb-workspace-cleaner -user <user> -organization <organization> -months <months>
 Where,
-  -months
-    Amount of months repository last updated (default 3)
-  -organization
-    Name of organization user wants to interact
   -user
     Username of BitBucket account
+  -organization
+    Name of organization user wants to interact
+  -months
+    Amount of months repository last updated (default 3)
 
 App password (https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/) should be written to pass.txt file for authentication
 */
