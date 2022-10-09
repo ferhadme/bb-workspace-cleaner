@@ -10,11 +10,13 @@ $ go build
 
 ### Usage
 ```sh
-$ ./bb-workspace-cleaner <user> <organization>
+$ ./bb-workspace-cleaner <user> <organization> <months>
 ```
 *user* is username of BitBucket user
 
 *organization* is name of the organization owns repositories
+
+*months* is amount of month repository last updated
 
 ### Pass.txt file
 Program uses [App passwords](https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/) for authenticating BitBucket endpoints.
