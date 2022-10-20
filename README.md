@@ -16,7 +16,7 @@ $ ./bb-workspace-cleaner -user <user> -organization <organization> -months <mont
 
 *organization* is name of the organization owns repositories
 
-*months* is amount of months repository last updated (default 3)
+*months* is amount of months branch last updated (default 3)
 
 ### Pass.txt file
 Program uses [App passwords](https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/) for authenticating BitBucket endpoints.
